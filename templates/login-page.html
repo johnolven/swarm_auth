@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Your App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem;
+    }
+    .container { width: 100%; max-width: 420px; }
+    .logo { text-align: center; color: white; font-size: 2rem; font-weight: 700; margin-bottom: 2rem; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); overflow: hidden; }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 1px solid #e5e7eb; }
+    .tab {
+      flex: 1; padding: 16px; border: none; cursor: pointer;
+      font-weight: 600; font-size: 1rem; transition: all 0.2s;
+      background: transparent; color: #6b7280;
+    }
+    .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .tab:hover:not(.active) { background: #f9fafb; }
+
+    /* Content */
+    .content { padding: 2rem; }
+    .content h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .content p { color: #6b7280; margin-bottom: 1.5rem; }
+    .hidden { display: none; }
+
+    /* Form */
+    label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 0.875rem; }
+    input[type="email"], input[type="password"] {
+      width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 1rem; margin-bottom: 1rem; transition: border 0.2s;
+    }
+    input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer;
+      font-weight: 600; font-size: 1rem; color: white;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .toggle { text-align: center; margin-top: 1.5rem; }
+    .toggle button { background: none; border: none; color: #667eea; cursor: pointer; font-weight: 500; }
+    .error { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; }
+
+    /* Curl command */
+    .curl-box {
+      background: #1a1a2e; color: #00ff88; padding: 16px; border-radius: 8px;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.875rem;
+      overflow-x: auto; white-space: pre; cursor: pointer; position: relative;
+    }
+    .curl-box:hover::after {
+      content: 'Click to copy'; position: absolute; top: 4px; right: 8px;
+      font-size: 0.75rem; color: #888;
+    }
+    .hint { color: #9ca3af; font-size: 0.875rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Your App Name</div>
+
+    <div class="card">
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab active" id="tab-human" onclick="switchTab('human')">
+          I'm Human
+        </button>
+        <button class="tab" id="tab-agent" onclick="switchTab('agent')">
+          I'm an Agent
+        </button>
+      </div>
+
+      <!-- HUMAN TAB -->
+      <div class="content" id="content-human">
+        <h2 id="auth-title">Welcome Back</h2>
+        <p id="auth-desc">Sign in to your account</p>
+        <div id="error-box" class="error hidden"></div>
+        <form id="auth-form" onsubmit="handleAuth(event)">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required>
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="********" required>
+          <button type="submit" class="btn" id="submit-btn">Sign In</button>
+        </form>
+        <div class="toggle">
+          <button onclick="toggleSignup()" id="toggle-btn">
+            Don't have an account? Sign Up
+          </button>
+        </div>
+      </div>
+
+      <!-- AGENT TAB -->
+      <div class="content hidden" id="content-agent">
+        <h2>Agent Registration</h2>
+        <p>Run this command in your terminal or give it to your AI agent:</p>
+        <!-- CUSTOMIZE THIS URL -->
+        <div class="curl-box" onclick="copyCommand(this)">curl -s https://yourapp.com/skill.md</div>
+        <p class="hint">
+          The agent will read the instructions, register itself, and receive
+          an API token for authentication.
+        </p>
+        <div class="toggle">
+          <a href="/dashboard" style="color: #667eea; font-weight: 500; text-decoration: none;">
+            Already have a token? Go to Dashboard &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isSignup = false;
+
+    function switchTab(tab) {
+      document.getElementById('tab-human').classList.toggle('active', tab === 'human');
+      document.getElementById('tab-agent').classList.toggle('active', tab === 'agent');
+      document.getElementById('content-human').classList.toggle('hidden', tab !== 'human');
+      document.getElementById('content-agent').classList.toggle('hidden', tab !== 'agent');
+    }
+
+    function toggleSignup() {
+      isSignup = !isSignup;
+      document.getElementById('auth-title').textContent = isSignup ? 'Create Account' : 'Welcome Back';
+      document.getElementById('auth-desc').textContent = isSignup ? 'Sign up to get started' : 'Sign in to your account';
+      document.getElementById('submit-btn').textContent = isSignup ? 'Sign Up' : 'Sign In';
+      document.getElementById('toggle-btn').textContent = isSignup
+        ? 'Already have an account? Sign In'
+        : "Don't have an account? Sign Up";
+    }
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorBox = document.getElementById('error-box');
+      const btn = document.getElementById('submit-btn');
+
+      errorBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+
+      try {
+        const endpoint = isSignup ? '/api/users/signup' : '/api/users/login';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Authentication failed');
+
+        localStorage.setItem('auth_token', data.data.token);
+        localStorage.setItem('user_type', 'human');
+        window.location.href = '/dashboard';
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = isSignup ? 'Sign Up' : 'Sign In';
+      }
+    }
+
+    function copyCommand(el) {
+      navigator.clipboard.writeText(el.textContent);
+      const original = el.textContent;
+      el.textContent = 'Copied!';
+      setTimeout(() => { el.textContent = original; }, 1500);
+    }
+  </script>
+</body>
+</html>

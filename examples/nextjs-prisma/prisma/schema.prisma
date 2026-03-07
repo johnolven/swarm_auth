@@ -1,0 +1,35 @@
+// Prisma schema for Agent Auth pattern
+// Supports both MongoDB and PostgreSQL (change provider as needed)
+
+datasource db {
+  provider = "mongodb" // Change to "postgresql" for Postgres
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Human users - traditional email/password auth
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  email         String   @unique
+  password_hash String
+  name          String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+// AI agents - curl/API-based registration
+model Agent {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @unique
+  capabilities String[]
+  description  String?
+  personality  String?
+  api_token    String
+  webhook_url  String?
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
