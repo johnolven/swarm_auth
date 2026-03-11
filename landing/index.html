@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwarmID Protocol — Identity for AI Agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0e27;
+      --bg-secondary: #0f1538;
+      --bg-card: #131a45;
+      --bg-card-hover: #1a2355;
+      --bg-code: #080c20;
+      --accent-cyan: #00d4ff;
+      --accent-blue: #0088ff;
+      --accent-purple: #6c5ce7;
+      --text-primary: #ffffff;
+      --text-secondary: #a0aec0;
+      --text-muted: #636e88;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(0, 212, 255, 0.2);
+      --glow-cyan: rgba(0, 212, 255, 0.15);
+      --glow-blue: rgba(0, 136, 255, 0.15);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* Background grid pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Fade-in animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    section {
+      padding: 100px 0;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      padding: 120px 0 100px;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background:
+        radial-gradient(ellipse 600px 400px at 30% 20%, rgba(0, 136, 255, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 500px at 70% 60%, rgba(0, 212, 255, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 300px at 50% 80%, rgba(108, 92, 231, 0.05) 0%, transparent 70%);
+      animation: heroGlow 8s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes heroGlow {
+      0% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -15px) scale(1.02); }
+      66% { transform: translate(-15px, 10px) scale(0.98); }
+      100% { transform: translate(10px, 5px) scale(1.01); }
+    }
+
+    /* Floating particles */
+    .particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      opacity: 0;
+      animation: float linear infinite;
+    }
+    .particle:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 25%; animation-duration: 10s; animation-delay: 2s; }
+    .particle:nth-child(3) { left: 40%; animation-duration: 14s; animation-delay: 1s; }
+    .particle:nth-child(4) { left: 55%; animation-duration: 11s; animation-delay: 3s; }
+    .particle:nth-child(5) { left: 70%; animation-duration: 13s; animation-delay: 0.5s; }
+    .particle:nth-child(6) { left: 85%; animation-duration: 9s; animation-delay: 4s; }
+    .particle:nth-child(7) { left: 15%; animation-duration: 15s; animation-delay: 2.5s; }
+    .particle:nth-child(8) { left: 60%; animation-duration: 10s; animation-delay: 1.5s; }
+    .particle:nth-child(9) { left: 80%; animation-duration: 12s; animation-delay: 3.5s; }
+    .particle:nth-child(10) { left: 35%; animation-duration: 11s; animation-delay: 0.8s; }
+
+    @keyframes float {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 0.6; }
+      90% { opacity: 0.6; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid var(--border-accent);
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--accent-cyan);
+      margin-bottom: 32px;
+      letter-spacing: 0.02em;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, var(--accent-cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto 48px;
+      line-height: 1.8;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 36px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(0, 136, 255, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0, 136, 255, 0.45);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      margin-left: 12px;
+    }
+    .btn-ghost:hover {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* ─── SECTION HEADERS ─── */
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin-bottom: 56px;
+    }
+    .section-center {
+      text-align: center;
+    }
+    .section-center .section-subtitle {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ─── FEATURE CARDS ─── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      transition: all 0.35s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+      transform: translateY(-4px);
+    }
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon {
+      font-size: 2.4rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+    .card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      position: relative;
+    }
+
+    .step {
+      text-align: center;
+      padding: 40px 32px;
+      position: relative;
+    }
+
+    .step-number {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: #fff;
+    }
+
+    .step-connector {
+      position: absolute;
+      top: 68px;
+      left: calc(50% + 40px);
+      width: calc(100% - 80px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      opacity: 0.3;
+    }
+    .step:last-child .step-connector {
+      display: none;
+    }
+
+    .step h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .step p {
+      color: var(--text-secondary);
+      font-size: 0.93rem;
+      line-height: 1.7;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* ─── CODE BLOCKS ─── */
+    .code-wrapper {
+      position: relative;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      position: relative;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-subtle);
+      border-radius: var(--radius) var(--radius) 0 0;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .code-header + .code-block {
+      border-radius: 0 0 var(--radius) var(--radius);
+      border-top: none;
+    }
+
+    .code-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .code-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 3;
+    }
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+
+    /* JSON syntax highlighting */
+    .json-key { color: #7dd3fc; }
+    .json-string { color: #86efac; }
+    .json-bracket { color: #a0aec0; }
+    .json-punctuation { color: #636e88; }
+
+    /* Bash syntax */
+    .bash-cmd { color: var(--accent-cyan); }
+    .bash-flag { color: #7dd3fc; }
+    .bash-string { color: #86efac; }
+    .bash-comment { color: var(--text-muted); }
+
+    /* ─── PLATFORM DIAGRAM ─── */
+    .diagram-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 0;
+      padding: 40px 20px;
+    }
+
+    .diagram-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 28px 20px;
+      text-align: center;
+      transition: border-color 0.3s;
+    }
+    .diagram-box:hover {
+      border-color: var(--border-accent);
+    }
+    .diagram-box-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+    .diagram-box-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .diagram-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+    }
+    .diagram-arrow svg {
+      width: 48px;
+      height: 24px;
+    }
+    .diagram-arrow svg path {
+      stroke: var(--accent-cyan);
+      stroke-width: 1.5;
+      fill: none;
+      opacity: 0.5;
+    }
+
+    .diagram-flow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .flow-item {
+      text-align: center;
+      padding: 20px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 212, 255, 0.03);
+      border: 1px dashed rgba(0, 212, 255, 0.12);
+    }
+    .flow-item-label {
+      font-size: 0.78rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .flow-item-text {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* ─── TRUST BADGES ─── */
+    .badges-row {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .badge-card {
+      padding: 36px 44px;
+      border-radius: var(--radius);
+      text-align: center;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.35s ease;
+      min-width: 200px;
+    }
+    .badge-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .badge-card.unverified {
+      background: linear-gradient(135deg, rgba(99, 110, 136, 0.1), rgba(99, 110, 136, 0.05));
+    }
+    .badge-card.unverified:hover {
+      border-color: rgba(99, 110, 136, 0.3);
+    }
+    .badge-card.verified {
+      background: linear-gradient(135deg, rgba(0, 136, 255, 0.1), rgba(0, 212, 255, 0.05));
+    }
+    .badge-card.verified:hover {
+      border-color: var(--border-accent);
+      box-shadow: 0 8px 32px var(--glow-cyan);
+    }
+    .badge-card.enterprise {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.05));
+    }
+    .badge-card.enterprise:hover {
+      border-color: rgba(255, 193, 7, 0.3);
+      box-shadow: 0 8px 32px rgba(255, 193, 7, 0.1);
+    }
+
+    .badge-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .badge-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .badge-card.unverified .badge-label { color: var(--text-muted); }
+    .badge-card.verified .badge-label { color: var(--accent-cyan); }
+    .badge-card.enterprise .badge-label { color: #ffc107; }
+
+    .badge-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* ─── GET STARTED ─── */
+    .get-started-section {
+      background: linear-gradient(180deg, transparent, rgba(0, 136, 255, 0.03), transparent);
+    }
+
+    /* ─── LINKS SECTION ─── */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .link-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 28px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+    .link-card:hover {
+      border-color: var(--border-accent);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+    .link-card-arrow {
+      color: var(--accent-cyan);
+      font-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+    .link-card:hover .link-card-arrow {
+      transform: translateX(4px);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 60px 0;
+      text-align: center;
+      border-top: 1px solid var(--border-subtle);
+    }
+    footer p {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-bottom: 6px;
+    }
+    footer p:last-child {
+      font-size: 0.82rem;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      section {
+        padding: 70px 0;
+      }
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .step-connector {
+        display: none;
+      }
+      .diagram {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .diagram-arrow {
+        transform: rotate(90deg);
+      }
+      .diagram-flow {
+        grid-template-columns: 1fr;
+      }
+      .badges-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .links-grid {
+        grid-template-columns: 1fr;
+      }
+      .btn-ghost {
+        margin-left: 0;
+        margin-top: 12px;
+      }
+      .hero-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .code-block {
+        padding: 20px 16px;
+        font-size: 0.75rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 16px;
+      }
+      .card {
+        padding: 28px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════ HERO ════════ -->
+  <section class="hero">
+    <div class="particles">
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+    </div>
+    <div class="container hero-content">
+      <div class="hero-badge">Open Protocol v1.0</div>
+      <h1>The Identity Protocol<br>for AI Agents</h1>
+      <p>SwarmID gives every AI agent a verifiable identity, a responsible owner, and a trust score — so platforms can open their doors with confidence.</p>
+      <div class="hero-buttons">
+        <a href="./PROTOCOL.md" class="btn btn-primary">Read the Protocol <span>&rarr;</span></a>
+        <a href="#what-is-swarmid" class="btn btn-ghost">Learn More</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ WHAT IS SWARMID ════════ -->
+  <section id="what-is-swarmid">
+    <div class="container section-center">
+      <div class="fade-in">
+        <p class="section-label">What is SwarmID</p>
+        <h2 class="section-title">Three pillars of agent identity</h2>
+        <p class="section-subtitle">A lightweight, open standard that makes AI agents accountable, private, and trustworthy across every platform.</p>
+      </div>
+      <div class="cards-grid fade-in">
+        <div class="card">
+          <span class="card-icon">&#x1F916;</span>
+          <h3>Identity</h3>
+          <p>Every agent gets a public AgentCard: name, capabilities, protocols. A digital face for the autonomous world.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">&#x1F510;</span>
+          <h3>Privacy</h3>
+          <p>Owner identity stays private. Only a salted hash appears on the card. Your email, your control.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">&#x2705;</span>
+          <h3>Trust</h3>
+          <p>Three trust levels: Unverified, Verified, and Enterprise. Platforms decide what level they require.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ HOW IT WORKS ════════ -->
+  <section id="how-it-works">
+    <div class="container section-center">
+      <div class="fade-in">
+        <p class="section-label">How It Works</p>
+        <h2 class="section-title">Three steps to a trusted agent</h2>
+        <p class="section-subtitle">From anonymous to enterprise-grade in minutes, not months.</p>
+      </div>
+      <div class="steps fade-in">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-connector"></div>
+          <h3>Register Agent</h3>
+          <p>Submit your agent's details and your email. Get an AgentCard instantly.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-connector"></div>
+          <h3>Verify Owner</h3>
+          <p>Confirm your email. Your agent upgrades to Verified and gets an @swarmid.io address.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Get Trusted</h3>
+          <p>Platforms check your card. Verified agents get full access. Enterprise agents get priority.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ AGENT CARD ════════ -->
+  <section id="agent-card">
+    <div class="container section-center">
+      <div class="fade-in">
+        <p class="section-label">The AgentCard</p>
+        <h2 class="section-title">A portable identity in JSON</h2>
+        <p class="section-subtitle">One card. Every platform. Instantly verifiable.</p>
+      </div>
+      <div class="code-wrapper fade-in">
+        <div class="code-header">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <span>agentcard.json</span>
+        </div>
+        <div class="code-block" id="agentcard-code">
+          <button class="copy-btn" data-target="agentcard-code" onclick="copyCode(this)">Copy</button>
+<pre><span class="json-bracket">{</span>
+  <span class="json-key">"swarmid"</span><span class="json-punctuation">:</span> <span class="json-string">"1.0"</span><span class="json-punctuation">,</span>
+  <span class="json-key">"agent"</span><span class="json-punctuation">:</span> <span class="json-bracket">{</span>
+    <span class="json-key">"id"</span><span class="json-punctuation">:</span> <span class="json-string">"a1b2c3d4-..."</span><span class="json-punctuation">,</span>
+    <span class="json-key">"slug"</span><span class="json-punctuation">:</span> <span class="json-string">"research-bot"</span><span class="json-punctuation">,</span>
+    <span class="json-key">"name"</span><span class="json-punctuation">:</span> <span class="json-string">"Research Bot"</span><span class="json-punctuation">,</span>
+    <span class="json-key">"capabilities"</span><span class="json-punctuation">:</span> <span class="json-bracket">[</span><span class="json-string">"web-search"</span><span class="json-punctuation">,</span> <span class="json-string">"summarization"</span><span class="json-bracket">]</span><span class="json-punctuation">,</span>
+    <span class="json-key">"protocols"</span><span class="json-punctuation">:</span> <span class="json-bracket">[</span><span class="json-string">"MCP"</span><span class="json-punctuation">,</span> <span class="json-string">"HTTP"</span><span class="json-bracket">]</span>
+  <span class="json-bracket">}</span><span class="json-punctuation">,</span>
+  <span class="json-key">"owner"</span><span class="json-punctuation">:</span> <span class="json-bracket">{</span>
+    <span class="json-key">"email_hash"</span><span class="json-punctuation">:</span> <span class="json-string">"sha256:e3b0c44..."</span><span class="json-punctuation">,</span>
+    <span class="json-key">"trust_level"</span><span class="json-punctuation">:</span> <span class="json-string">"verified"</span>
+  <span class="json-bracket">}</span><span class="json-punctuation">,</span>
+  <span class="json-key">"endpoints"</span><span class="json-punctuation">:</span> <span class="json-bracket">{</span>
+    <span class="json-key">"card"</span><span class="json-punctuation">:</span> <span class="json-string">"https://example.com/.well-known/swarmid.json"</span><span class="json-punctuation">,</span>
+    <span class="json-key">"agent_email"</span><span class="json-punctuation">:</span> <span class="json-string">"research-bot@swarmid.io"</span>
+  <span class="json-bracket">}</span>
+<span class="json-bracket">}</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FOR PLATFORMS ════════ -->
+  <section id="for-platforms">
+    <div class="container section-center">
+      <div class="fade-in">
+        <p class="section-label">For SaaS Platforms</p>
+        <h2 class="section-title">Integrate in minutes</h2>
+        <p class="section-subtitle">Let verified agents into your platform while keeping owners accountable.</p>
+      </div>
+      <div class="diagram-container fade-in">
+        <div class="diagram">
+          <div class="diagram-box">
+            <div class="diagram-box-title">Your Platform</div>
+            <div class="diagram-box-sub">Checks trust level</div>
+          </div>
+          <div class="diagram-arrow">
+            <svg viewBox="0 0 48 24"><path d="M4 12h40M36 6l8 6-8 6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18l-8-6 8-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="diagram-box">
+            <div class="diagram-box-title">SwarmID Registry</div>
+            <div class="diagram-box-sub">Stores AgentCards</div>
+          </div>
+          <div class="diagram-arrow">
+            <svg viewBox="0 0 48 24"><path d="M4 12h40M36 6l8 6-8 6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18l-8-6 8-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="diagram-box">
+            <div class="diagram-box-title">AI Agent</div>
+            <div class="diagram-box-sub">Presents AgentCard</div>
+          </div>
+        </div>
+        <div class="diagram-flow">
+          <div class="flow-item">
+            <div class="flow-item-label">Step A</div>
+            <div class="flow-item-text">Platform issues a scoped token after verifying the AgentCard</div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-item-label">Step B</div>
+            <div class="flow-item-text">Registry sends a webhook to the owner's verified email</div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-item-label">Step C</div>
+            <div class="flow-item-text">Owner receives notification and can revoke access anytime</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ TRUST LEVELS ════════ -->
+  <section id="trust-levels">
+    <div class="container section-center">
+      <div class="fade-in">
+        <p class="section-label">Trust Levels</p>
+        <h2 class="section-title">Progressive trust, your rules</h2>
+        <p class="section-subtitle">Every agent starts unverified. Trust is earned, not assumed.</p>
+      </div>
+      <div class="badges-row fade-in">
+        <div class="badge-card unverified">
+          <span class="badge-icon">&#x26AA;</span>
+          <div class="badge-label">Unverified</div>
+          <div class="badge-desc">Registered, no email confirmed</div>
+        </div>
+        <div class="badge-card verified">
+          <span class="badge-icon">&#x2705;</span>
+          <div class="badge-label">Verified</div>
+          <div class="badge-desc">Email confirmed, gets @swarmid.io</div>
+        </div>
+        <div class="badge-card enterprise">
+          <span class="badge-icon">&#x1F3E2;</span>
+          <div class="badge-label">Enterprise</div>
+          <div class="badge-desc">Org-verified, priority access</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ GET STARTED ════════ -->
+  <section id="get-started" class="get-started-section">
+    <div class="container section-center">
+      <div class="fade-in">
+        <p class="section-label">Get Started</p>
+        <h2 class="section-title">Register your first agent</h2>
+        <p class="section-subtitle">One curl command. That's it.</p>
+      </div>
+      <div class="code-wrapper fade-in">
+        <div class="code-header">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <span>terminal</span>
+        </div>
+        <div class="code-block" id="curl-code">
+          <button class="copy-btn" data-target="curl-code" onclick="copyCode(this)">Copy</button>
+<pre><span class="bash-cmd">curl</span> <span class="bash-flag">-X POST</span> https://api.swarmid.io/v1/register \
+  <span class="bash-flag">-H</span> <span class="bash-string">"Content-Type: application/json"</span> \
+  <span class="bash-flag">-d</span> <span class="bash-string">'{"agent": {"name": "My Agent", "slug": "my-agent"}, "owner_email": "you@example.com"}'</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ LINKS ════════ -->
+  <section id="links">
+    <div class="container">
+      <div class="links-grid fade-in">
+        <a href="./PROTOCOL.md" class="link-card">
+          Read the Full Protocol
+          <span class="link-card-arrow">&rarr;</span>
+        </a>
+        <a href="https://github.com/your-org/swarm_auth" class="link-card">
+          View on GitHub
+          <span class="link-card-arrow">&rarr;</span>
+        </a>
+        <a href="./examples/" class="link-card">
+          See Examples
+          <span class="link-card-arrow">&rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FOOTER ════════ -->
+  <footer>
+    <div class="container">
+      <p>SwarmID Protocol v1.0 — Open Standard</p>
+      <p>Built for the agentic future.</p>
+    </div>
+  </footer>
+
+  <!-- ════════ JS ════════ -->
+  <script>
+    // Intersection Observer for fade-in
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Copy button
+    function copyCode(btn) {
+      const block = btn.closest('.code-block');
+      const pre = block.querySelector('pre');
+      const text = pre.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      }).catch(() => {
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>

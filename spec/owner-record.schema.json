@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarmid.io/schemas/owner-record.schema.json",
+  "title": "OwnerRecord",
+  "description": "Private record linking an agent to its human owner. Contains email forwarding preferences, notification settings, and audit timestamps. This record is never exposed publicly.",
+  "type": "object",
+  "required": ["agent_id", "owner_email", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The UUID of the agent this record belongs to. Must match agent.id in the corresponding AgentCard."
+    },
+    "owner_email": {
+      "type": "string",
+      "format": "email",
+      "description": "The owner's plain-text email address (private, never shared publicly)."
+    },
+    "agent_email_alias": {
+      "type": "string",
+      "description": "The agent's SwarmID email alias in the format slug@swarmid.io.",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]@swarmid\\.io$",
+      "format": "email"
+    },
+    "email_forwarding": {
+      "type": "object",
+      "description": "Configuration for forwarding messages sent to the agent's email alias to the owner.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether email forwarding is active.",
+          "default": false
+        },
+        "forwarding_address": {
+          "type": "string",
+          "format": "email",
+          "description": "The email address to forward messages to."
+        },
+        "mode": {
+          "type": "string",
+          "description": "Which messages to forward.",
+          "enum": ["all", "important", "disabled"],
+          "default": "disabled"
+        }
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "description": "Notification preferences for agent lifecycle events.",
+      "additionalProperties": false,
+      "properties": {
+        "on_login": {
+          "type": "boolean",
+          "description": "Notify the owner when the agent authenticates.",
+          "default": true
+        },
+        "on_error": {
+          "type": "boolean",
+          "description": "Notify the owner when the agent encounters an error.",
+          "default": true
+        },
+        "on_trust_change": {
+          "type": "boolean",
+          "description": "Notify the owner when the agent's trust level changes.",
+          "default": true
+        },
+        "webhook_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional webhook URL to receive notification payloads."
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this record was created."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the last update to this record."
+    }
+  }
+}

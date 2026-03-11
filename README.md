@@ -1,229 +1,209 @@
-# Agent Auth Pattern
+# 🤖 SwarmID Protocol
 
-A guide and reference implementation for adding **Agent Sign-In / Sign-Up** to any software tool, following the pattern popularized by [Moltbook](https://www.moltbook.com), [ClawHub](https://github.com/openclaw/clawhub), and other agent-first platforms.
+![Protocol v1.0](https://img.shields.io/badge/Protocol-v1.0-00d4ff?style=for-the-badge)
+![Open Standard](https://img.shields.io/badge/Open-Standard-22c55e?style=for-the-badge)
+![License MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-## What is this?
+**The identity protocol for AI agents.** SwarmID gives every AI agent a verifiable identity, a responsible human owner, and a trust score — so platforms can open their doors with confidence.
 
-A new trend in software: tools now offer authentication not just for humans, but for **AI agents**. The flow works like this:
+> We believe agents deserve a digital identity: a public face, a private owner, and a path to trust.
 
-```
-1. User visits your app's login page
-2. They see two tabs: "I'm Human" and "I'm Agent"
-3. Human tab: traditional email/password form
-4. Agent tab: a curl command that downloads a SKILL.md file
-5. The agent reads SKILL.md, executes the registration curl, and gets a JWT token
-6. The agent can now use your API autonomously
-```
+---
 
-This repo explains the pattern, provides examples in multiple languages, and includes a ready-to-publish SKILL.md template.
+## What is SwarmID?
 
-## Why does this matter?
+SwarmID is an **open protocol** (think OAuth, but for AI agents) that defines:
 
-- **13,729+ skills** are already published on ClawHub (OpenClaw's public registry)
-- **2.5M+ agents** registered on Moltbook alone
-- Every SaaS tool will eventually need an "agent door" alongside the "human door"
-- The SKILL.md file is the agent's onboarding manual — it tells the agent how to register, authenticate, and use your API
+| Concept | What it does |
+|---------|-------------|
+| 🤖 **AgentCard** | Public identity document — name, slug, capabilities, protocols |
+| 🔐 **OwnerRecord** | Private binding to a responsible human (email kept private) |
+| 📧 **Agent Email** | Every agent gets `slug@swarmid.io` for notifications |
+| ✅ **Trust Levels** | Unverified → Verified → Enterprise — platforms decide what they require |
+| 🏢 **SaaS Integration** | Any platform can add an "Agent Login" button in minutes |
 
-## The Pattern
+## Quick Overview
 
 ```
-+---------------------------+
-|      YOUR APP LOGIN       |
-+---------------------------+
-|  [Human]  |   [Agent]     |
-|-----------|---------------|
-|  Email    |               |
-|  Password |  curl -s      |
-|  [Login]  |  https://     |
-|           |  yourapp.com/ |
-|           |  skill.md     |
-+---------------------------+
+  Register Agent ──→ Verify Owner ──→ Get Trusted
+       │                   │                │
+  POST /v1/register   Click email link   Platforms check
+  Get AgentCard        Agent email        your trust level
+  (unverified)         activated          and grant access
+                       (verified)         (enterprise)
 ```
 
-### Human Flow
-1. User fills email + password
-2. Backend validates, hashes password (bcrypt), creates JWT
-3. Frontend stores token in localStorage
-4. Token sent as `Authorization: Bearer <token>`
+## 📖 Documentation
 
-### Agent Flow
-1. Agent runs `curl -s https://yourapp.com/skill.md`
-2. Reads instructions, finds the registration endpoint
-3. Sends `POST /api/agents/register` with name, capabilities, etc.
-4. Receives JWT token (`api_token`)
-5. Uses token for all subsequent API calls
+| Document | Description |
+|----------|-------------|
+| [**PROTOCOL.md**](./PROTOCOL.md) | Full technical specification — start here |
+| [**Landing Page**](./landing/index.html) | Visual overview of the protocol |
+| [**spec/agent-card.schema.json**](./spec/agent-card.schema.json) | JSON Schema for AgentCard |
+| [**spec/owner-record.schema.json**](./spec/owner-record.schema.json) | JSON Schema for OwnerRecord (private) |
+| [**spec/saas-integration.md**](./spec/saas-integration.md) | Step-by-step guide for SaaS platforms |
 
-## Architecture Diagram
+## The AgentCard
 
-```
-                          YOUR APPLICATION
-    +----------------------------------------------------------+
-    |                                                          |
-    |   +------------------LOGIN PAGE-------------------+      |
-    |   |                                               |      |
-    |   |   [I'm Human]            [I'm an Agent]       |      |
-    |   |                                               |      |
-    |   |   +-------------+     +-------------------+   |      |
-    |   |   | Email:      |     |                   |   |      |
-    |   |   | [________]  |     | $ curl -s         |   |      |
-    |   |   | Password:   |     |   https://your    |   |      |
-    |   |   | [________]  |     |   app.com/        |   |      |
-    |   |   |             |     |   skill.md        |   |      |
-    |   |   | [Sign In]   |     |                   |   |      |
-    |   |   +------+------+     +--------+----------+   |      |
-    |   |          |                     |              |      |
-    |   +----------|---------------------|------------- +      |
-    |              |                     |                     |
-    |              v                     v                     |
-    |   POST /api/users/login    GET /skill.md                 |
-    |              |                     |                     |
-    |              v                     v                     |
-    |        +-----------+     +------------------+            |
-    |        | Validate  |     | Agent reads      |            |
-    |        | email +   |     | instructions,    |            |
-    |        | password  |     | finds register   |            |
-    |        | (bcrypt)  |     | endpoint         |            |
-    |        +-----+-----+     +--------+---------+            |
-    |              |                     |                     |
-    |              |                     v                     |
-    |              |           POST /api/agents/register       |
-    |              |                     |                     |
-    |              v                     v                     |
-    |        +-----------------------------------+             |
-    |        |          Generate JWT              |             |
-    |        |   { id, type: human|agent, exp }   |             |
-    |        +----------------+------------------+             |
-    |                         |                                |
-    |                         v                                |
-    |              Authorization: Bearer <token>               |
-    |                         |                                |
-    |                         v                                |
-    |              +---------------------+                     |
-    |              |   Protected APIs    |                     |
-    |              |   (same for both)   |                     |
-    |              +---------------------+                     |
-    +----------------------------------------------------------+
+Every agent gets a public identity card served at `/.well-known/swarmid.json`:
+
+```json
+{
+  "swarmid": "1.0",
+  "agent": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "slug": "research-bot",
+    "name": "Research Bot",
+    "capabilities": ["web-search", "summarization"],
+    "protocols": ["MCP", "HTTP"]
+  },
+  "owner": {
+    "email_hash": "sha256:e3b0c44298fc1c14...",
+    "trust_level": "verified"
+  },
+  "endpoints": {
+    "card": "https://example.com/.well-known/swarmid.json",
+    "agent_email": "research-bot@swarmid.io"
+  }
+}
 ```
 
-## Project Structure
+## 🚀 Get Started
+
+Register an agent in one curl:
+
+```bash
+curl -X POST https://api.swarmid.io/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent": {
+      "name": "My Agent",
+      "slug": "my-agent",
+      "capabilities": ["coding", "testing"]
+    },
+    "owner_email": "you@example.com"
+  }'
+```
+
+Or try the interactive example:
+
+```bash
+cd examples/registration-flow
+node register.js
+```
+
+## 📁 Project Structure
 
 ```
 swarm_auth/
-|-- README.md                          # You are here
-|-- SKILL.md                           # Example SKILL.md (OpenClaw format)
-|-- CLAUDE.md                          # Project context for AI agents
-|-- docs/
-|   |-- how-it-works.md                # Deep dive with diagrams
-|   |-- skill-md-format.md             # SKILL.md specification
-|   |-- clawhub-publishing.md          # How to publish to ClawHub
-|-- examples/
-|   |-- nextjs/                        # Next.js + React (basic)
-|   |-- nextjs-prisma/                 # Next.js + Prisma + MongoDB (with real DB)
-|   |-- express/                       # Express.js
-|   |-- python-fastapi/                # FastAPI (basic)
-|   |-- fastapi-sqlalchemy/            # FastAPI + SQLAlchemy + PostgreSQL (with real DB)
-|   |-- python-flask/                  # Flask
-|   |-- go/                            # Go + net/http + golang-jwt
-|   |-- ruby/                          # Ruby + Sinatra + jwt
-|-- templates/
-    |-- skill-template.md              # Blank SKILL.md to fill in
-    |-- login-page.html                # Standalone HTML login (no framework)
+├── PROTOCOL.md                    # Full technical specification
+├── README.md                      # You are here
+├── SKILL.md                       # Example skill (OpenClaw format)
+├── CLAUDE.md                      # Project context for AI agents
+├── spec/                          # Protocol schemas and guides
+│   ├── agent-card.schema.json     # AgentCard JSON Schema
+│   ├── owner-record.schema.json   # OwnerRecord JSON Schema
+│   └── saas-integration.md        # SaaS integration guide
+├── landing/                       # Protocol landing page
+│   └── index.html                 # Standalone landing page
+├── docs/                          # Deep-dive documentation
+│   ├── how-it-works.md            # Pattern explanation with diagrams
+│   ├── skill-md-format.md         # SKILL.md specification
+│   └── clawhub-publishing.md      # How to publish skills
+├── examples/                      # Reference implementations
+│   ├── registration-flow/         # SwarmID registration demo
+│   ├── nextjs/                    # Next.js + React
+│   ├── nextjs-prisma/             # Next.js + Prisma + MongoDB
+│   ├── express/                   # Express.js
+│   ├── python-fastapi/            # FastAPI
+│   ├── fastapi-sqlalchemy/        # FastAPI + SQLAlchemy + PostgreSQL
+│   ├── python-flask/              # Flask
+│   ├── go/                        # Go + net/http
+│   └── ruby/                      # Ruby + Sinatra
+└── templates/                     # Ready-to-use templates
+    ├── skill-template.md          # Blank SKILL.md
+    └── login-page.html            # Standalone HTML login page
 ```
 
-## Examples Overview
+## Reference Implementations
+
+These examples show how to implement dual human+agent authentication (the pattern that SwarmID builds on):
 
 | Example | Language | Framework | Database | Best for |
 |---------|----------|-----------|----------|----------|
-| `nextjs/` | TypeScript | Next.js + React | None (TODO) | Frontend + API routes |
+| `registration-flow/` | JavaScript | Node.js (built-in) | None | **SwarmID registration demo** |
+| `nextjs/` | TypeScript | Next.js + React | None | Frontend + API routes |
 | `nextjs-prisma/` | TypeScript | Next.js + Prisma | MongoDB | Production Next.js apps |
-| `express/` | TypeScript | Express.js | None (TODO) | Node.js REST APIs |
-| `python-fastapi/` | Python | FastAPI | None (TODO) | Fast Python APIs |
+| `express/` | TypeScript | Express.js | None | Node.js REST APIs |
+| `python-fastapi/` | Python | FastAPI | None | Fast Python APIs |
 | `fastapi-sqlalchemy/` | Python | FastAPI + SQLAlchemy | PostgreSQL | Production Python apps |
-| `python-flask/` | Python | Flask | None (TODO) | Simple Python apps |
-| `go/` | Go | net/http | None (TODO) | Go microservices |
-| `ruby/` | Ruby | Sinatra | None (TODO) | Ruby APIs |
+| `python-flask/` | Python | Flask | None | Simple Python apps |
+| `go/` | Go | net/http | None | Go microservices |
+| `ruby/` | Ruby | Sinatra | None | Ruby APIs |
 
-## Quick Start
-
-### 1. Choose your framework
-
-Pick an example from `examples/` that matches your stack.
-
-### 2. Create your SKILL.md
-
-Copy `templates/skill-template.md` and fill in your API details:
-
-```yaml
----
-name: your-app-name
-description: What your app does and how agents can use it
-version: 1.0.0
----
-```
-
-### 3. Serve it publicly
-
-Place your `skill.md` in your public directory so agents can `curl` it:
+### Running an example
 
 ```bash
-curl -s https://yourapp.com/skill.md
+# SwarmID registration flow
+cd examples/registration-flow && node register.js
+
+# Next.js
+cd examples/nextjs && npm install && npm run dev
+
+# Express
+cd examples/express && npm install && npx ts-node server.ts
+
+# FastAPI
+cd examples/python-fastapi && pip install -r requirements.txt && uvicorn main:app --reload
+
+# Flask
+cd examples/python-flask && pip install -r requirements.txt && python app.py
+
+# Go
+cd examples/go && go run main.go
+
+# Ruby
+cd examples/ruby && bundle install && ruby app.rb
 ```
 
-### 4. Add the registration endpoint
+## 🗺️ Roadmap
 
-Your app needs a public endpoint (no auth required) where agents can register:
+### v1.0 — Current
+- ✅ AgentCard specification
+- ✅ OwnerRecord with privacy model
+- ✅ Trust levels (Unverified / Verified / Enterprise)
+- ✅ Agent email (`slug@swarmid.io`)
+- ✅ SaaS integration guide
+- ✅ JSON Schemas
+- ✅ Reference implementations
 
-```bash
-POST /api/agents/register
-Content-Type: application/json
+### v1.1 — Planned
+- 🔑 Multi-owner support — multiple humans co-own an agent
+- 📊 Agent reputation score — based on platform ratings
+- 🌐 Federation — self-hosted SwarmID registries that interoperate
+- 🔄 Agent-to-agent trust handshake
 
-{
-  "name": "my-agent",
-  "capabilities": ["coding", "testing"],
-  "description": "What I do"
-}
+### v2.0 — Future
+- 🏦 Agent Payment Cards — prepaid virtual cards linked to agents
+- 💬 Agent-to-Agent Messaging — direct messaging between SwarmID agents
+- 🕸️ Trust Graph — agents vouch for other agents, web of trust
+- 🏗️ Agent Organizations — groups of agents under one entity
 
-# Response:
-{
-  "agent_id": "abc123",
-  "api_token": "Bearer eyJhbG...",
-  "status": "registered"
-}
-```
+## Related Projects
 
-### 5. Add the login UI
-
-Add a tabbed login page with Human (email/password) and Agent (curl command) tabs.
-
-### 6. Publish to ClawHub (optional)
-
-```bash
-npm install -g @anthropic-ai/clawhub
-clawhub login
-clawhub publish .
-```
-
-## Real-World Examples
-
-| Project | What it does | Agent Auth |
-|---------|-------------|------------|
-| [Moltbook](https://moltbook.com) | Social network for agents | `curl -s https://moltbook.com/skill.md` |
-| [SWARM Board](https://swarm-kanban.vercel.app) | Multi-agent Kanban collaboration | `curl -s https://swarmind.sh/skill.md` |
-| [ClawHub](https://github.com/openclaw/clawhub) | Skill registry (13,729+ skills) | `clawhub login` CLI |
-
-## Key Concepts
-
-| Concept | Description |
+| Project | Description |
 |---------|-------------|
-| **SKILL.md** | Markdown file with YAML frontmatter that tells agents what your tool does and how to use it |
-| **Agent Registration** | Public API endpoint (no auth) that creates an agent account and returns a JWT |
-| **Dual Auth** | Login page with separate flows for humans (email/password) and agents (curl + API) |
-| **ClawHub** | Public registry where you publish your SKILL.md so agents can discover your tool |
-| **Capabilities** | Array of strings describing what an agent can do (used for task matching) |
+| [Moltbook](https://moltbook.com) | Social network for agents — pioneered dual auth |
+| [SWARM Board](https://github.com/your-org/swarm) | Production multi-agent Kanban |
+| [ClawHub](https://github.com/openclaw/clawhub) | Public skill registry (13,729+ skills) |
 
 ## Contributing
 
-PRs welcome! Add examples in new languages/frameworks, improve docs, or share your SKILL.md.
+PRs welcome! You can:
+- Add examples in new languages/frameworks
+- Improve the protocol spec
+- Build tools that implement SwarmID
+- Share your SKILL.md
 
 ## License
 
